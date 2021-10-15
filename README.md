@@ -50,7 +50,7 @@ img {
 
 ```js
 import * as THREE from "three";
-import { Maku, MakuGroup, getScreenFov } from "maku.js";
+import { Maku, MakuGroup, Scroller, getScreenFov } from "maku.js";
 
 // Select a container
 const container = document.querySelector(".image-plane");
