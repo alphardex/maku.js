@@ -52,14 +52,28 @@ img {
 import * as THREE from "three";
 import { Maku, MakuGroup, getScreenFov } from "maku.js";
 
-// Define your scene, renderer, camera, etc
-const scene = new THREE.Scene();
-const renderer = new THREE.WebGLRenderer();
+// Select a container
+const container = document.querySelector(".image-plane");
 
+// Create scene
+const scene = new THREE.Scene();
+
+// Create camera
 // The fov of camera can be calculated by the function below to sync the unit
-const fov = getScreenFov();
-const aspect = window.innerWidth / window.innerHeight;
-const camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 1000);
+const cameraPosition = new THREE.Vector3(0, 0, 600);
+const fov = getScreenFov(cameraPosition.z);
+const aspect = container.clientWidth / container.clientHeight;
+const camera = new THREE.PerspectiveCamera(fov, aspect, 100, 2000);
+camera.position.copy(cameraPosition);
+
+// Create Renderer
+const renderer = new THREE.WebGLRenderer({
+  alpha: true,
+  antialias: true,
+});
+renderer.setSize(container.clientWidth, container.clientHeight);
+renderer.setClearColor(0x000000, 0);
+container.appendChild(renderer.domElement);
 
 // Select all the images you want to render in WebGL
 const images = [...document.querySelectorAll("img")];
@@ -111,14 +125,28 @@ makuGroup.addMultiple(makus);
 // Sync images positions
 makuGroup.setPositions();
 
+// Make a scroller
+const scroller = new Scroller();
+scroller.listenForScroll();
+
+// Sync scroll
+const update = () => {
+  scroller.syncScroll();
+  const currentScrollY = scroller.scroll.current;
+  makuGroup.setPositions(currentScrollY);
+};
+
 // Render the scene
 renderer.setAnimationLoop(() => {
+  update();
   renderer.render(scene, camera);
 });
 
 // And the basic setup is done!
 // For more, you should visit demos below.
 ```
+
+Link for this setup: [Click Me](https://codepen.io/alphardex/pen/bGrVzvO)
 
 ## Demos
 
