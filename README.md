@@ -52,11 +52,11 @@ img {
 import * as THREE from "three";
 import { Maku, MakuGroup, getScreenFov } from "maku.js";
 
-// Define your scene, renderer, camera, etc.
+// Define your scene, renderer, camera, etc
 const scene = new THREE.Scene();
 const renderer = new THREE.WebGLRenderer();
 
-// The fov of camera can be calculated by the function below to sync the unit.
+// The fov of camera can be calculated by the function below to sync the unit
 const fov = getScreenFov();
 const aspect = window.innerWidth / window.innerHeight;
 const camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 1000);
