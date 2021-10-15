@@ -21,7 +21,7 @@ npm i maku.js three --save
 
 ## Usage
 
-1. Define some images in your HTML
+1. Define some images in your HTML, and make them transparent
 
 ```html
 <div class="image-plane fixed z-0 w-screen h-screen pointer-events-none"></div>
@@ -40,12 +40,26 @@ npm i maku.js three --save
 </div>
 ```
 
+```css
+img {
+  opacity: 0;
+}
+```
+
 2. Use `Maku` Class to sync HTML with WebGL
 
 ```js
-// define your scene, camera, renderer, etc.
+import * as THREE from "three";
+import { Maku, MakuGroup, getScreenFov } from "maku.js";
+
+// Define your scene, renderer, camera, etc.
 const scene = new THREE.Scene();
-...
+const renderer = new THREE.WebGLRenderer();
+
+// The fov of camera can be calculated by the function below to sync the unit.
+const fov = getScreenFov();
+const aspect = window.innerWidth / window.innerHeight;
+const camera = new THREE.PerspectiveCamera(fov, aspect, 0.1, 1000);
 
 // Select all the images you want to render in WebGL
 const images = [...document.querySelectorAll("img")];
@@ -82,7 +96,7 @@ const imagePlaneMaterial = new THREE.ShaderMaterial({
   vertexShader: imagePlaneMainVertexShader,
   fragmentShader: imagePlaneMainFragmentShader,
   side: THREE.DoubleSide,
-  uniforms:
+  uniforms: {
     uTexture: {
       value: null,
     },
@@ -91,13 +105,16 @@ const imagePlaneMaterial = new THREE.ShaderMaterial({
 
 // Make a MakuGroup that contains all the makus!
 const makuGroup = new MakuGroup();
-const makus = images.map(
-  (image) => new Maku(image, imagePlaneMaterial, scene)
-);
+const makus = images.map((image) => new Maku(image, imagePlaneMaterial, scene));
 makuGroup.addMultiple(makus);
 
 // Sync images positions
 makuGroup.setPositions();
+
+// Render the scene
+renderer.setAnimationLoop(() => {
+  renderer.render(scene, camera);
+});
 
 // And the basic setup is done!
 // For more, you should visit demos below.
