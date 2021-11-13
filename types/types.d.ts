@@ -20,3 +20,10 @@ export interface Segments {
   width: number;
   height: number;
 }
+
+export interface MakuConfig {
+  meshType?: MeshType;
+  meshSizeType?: MeshSizeType;
+  segments?: Segments;
+  textureUniform?: string;
+}

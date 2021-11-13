@@ -1,11 +1,5 @@
 import * as THREE from "three";
-import {
-  HTMLIVCElement,
-  MeshSizeType,
-  MeshType,
-  Scroll,
-  Segments,
-} from "../types/types";
+import { HTMLIVCElement, MakuConfig, Scroll, Segments } from "../types/types";
 
 // 用于同步HTML元素与WebGL的平面元素
 class Maku {
@@ -18,14 +12,18 @@ class Maku {
     el: HTMLIVCElement,
     material: THREE.ShaderMaterial,
     scene: THREE.Scene,
-    meshType: MeshType = "mesh",
-    meshSizeType: MeshSizeType = "size",
-    segments: Segments = {
-      width: 64,
-      height: 64,
-    },
-    textureUniform = "uTexture"
+    config: MakuConfig = {}
   ) {
+    const {
+      meshType = "mesh",
+      meshSizeType = "size",
+      segments = {
+        width: 64,
+        height: 64,
+      },
+      textureUniform = "uTexture",
+    } = config;
+
     this.el = el;
     this.scene = scene;
     this.segments = segments;
