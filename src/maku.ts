@@ -1,31 +1,40 @@
 import * as THREE from "three";
-import { HTMLIVCElement, MeshSizeType, MeshType, Scroll } from "../types/types";
+import {
+  HTMLIVCElement,
+  MeshSizeType,
+  MeshType,
+  Scroll,
+  Segments,
+} from "../types/types";
 
 // 用于同步HTML元素与WebGL的平面元素
 class Maku {
-  el!: HTMLIVCElement; // 元素
-  rect!: DOMRect; // 元素矩阵
-  mesh!: THREE.Mesh | THREE.Points; // 网格
-  scene!: THREE.Scene; // 所属场景
+  el: HTMLIVCElement; // 元素
+  rect: DOMRect; // 元素矩阵
+  mesh: THREE.Mesh | THREE.Points; // 网格
+  scene: THREE.Scene; // 所属场景
+  segments: Segments; // 细分数
   constructor(
     el: HTMLIVCElement,
     material: THREE.ShaderMaterial,
     scene: THREE.Scene,
     meshType: MeshType = "mesh",
     meshSizeType: MeshSizeType = "size",
-    segments = {
+    segments: Segments = {
       width: 64,
       height: 64,
-    }
+    },
+    textureUniform = "uTexture"
   ) {
     this.el = el;
     this.scene = scene;
+    this.segments = segments;
 
     // 创建贴图，将其设为材质的uniform
     const texture = new THREE.Texture(el);
     texture.needsUpdate = true;
     const materialCopy = material.clone();
-    materialCopy.uniforms.uTexture.value = texture;
+    materialCopy.uniforms[textureUniform].value = texture;
 
     // 获取图片的DOM矩阵，包含了长宽等信息
     const rect = el.getBoundingClientRect();
@@ -111,7 +120,7 @@ class MakuGroup {
 
 // 滚动监听器
 class Scroller {
-  scroll!: Scroll;
+  scroll: Scroll;
   constructor() {
     this.scroll = {
       current: 0,

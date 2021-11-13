@@ -15,3 +15,8 @@ export interface Scroll {
   delta: number;
   direction: "up" | "down" | "";
 }
+
+export interface Segments {
+  width: number;
+  height: number;
+}
