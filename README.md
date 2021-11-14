@@ -144,6 +144,7 @@ renderer.setAnimationLoop(() => {
 
 // And the basic setup is done!
 // For more, you should visit demos below.
+// https://codepen.io/collection/xKGjro
 ```
 
 Link for this setup: [Click Me](https://codepen.io/alphardex/pen/bGrVzvO)
