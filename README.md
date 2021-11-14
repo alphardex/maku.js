@@ -16,7 +16,7 @@
 ## Install
 
 ```sh
-npm i maku.js --save
+npm i maku.js
 ```
 
 ## Usage
