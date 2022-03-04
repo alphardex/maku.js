@@ -22,6 +22,7 @@ class Maku {
         height: 64,
       },
       textureUniform = "uTexture",
+      useTextureLoader = true,
     } = config;
 
     this.el = el;
@@ -29,7 +30,15 @@ class Maku {
     this.segments = segments;
 
     // 创建贴图，将其设为材质的uniform
-    const texture = new THREE.Texture(el);
+    // 这里为什么优先用TextureLoader？
+    // 因为three.js自v135起用了texStorage2D
+    // texStorage2D只接受固定尺寸的图片，用CSS缩放大小的图片则不受支持
+    // Github的issue地址：https://github.com/mrdoob/three.js/issues/23164
+    // 用TextureLoader只是一时之举，希望官方能早日想出更好的修复方案
+    const texture =
+      useTextureLoader && !(el instanceof HTMLCanvasElement)
+        ? new THREE.TextureLoader().load(el.src)
+        : new THREE.Texture(el);
     texture.needsUpdate = true;
     const materialCopy = material.clone();
     materialCopy.uniforms[textureUniform].value = texture;

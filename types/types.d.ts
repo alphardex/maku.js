@@ -26,4 +26,5 @@ export interface MakuConfig {
   meshSizeType?: MeshSizeType;
   segments?: Segments;
   textureUniform?: string;
+  useTextureLoader?: boolean;
 }
