@@ -1,6 +1,6 @@
 {
   "name": "maku.js",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A bridge between HTML and WebGL(three.js).",
   "main": "./dist/maku.js",
   "types": "./dist/maku.d.ts",
@@ -9,8 +9,10 @@
   },
   "author": "alphardex",
   "license": "MIT",
-  "devDependencies": {
-    "@types/three": "^0.138.0",
+  "dependencies": {
     "three": "^0.138.3"
+  },
+  "devDependencies": {
+    "@types/three": "^0.138.0"
   }
 }
