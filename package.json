@@ -1,6 +1,6 @@
 {
   "name": "maku.js",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A bridge between HTML and WebGL(three.js).",
   "main": "./dist/maku.js",
   "types": "./dist/maku.d.ts",

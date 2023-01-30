@@ -52,18 +52,13 @@ class Maku {
     // 1. 长宽跟DOM矩阵一致（默认）
     // 2. 长宽为单位1，创建为网格后再缩放至原大小
     const geometryMap = {
-      size: new THREE.PlaneBufferGeometry(
+      size: new THREE.PlaneGeometry(
         width,
         height,
         segments.width,
         segments.height
       ),
-      scale: new THREE.PlaneBufferGeometry(
-        1,
-        1,
-        segments.width,
-        segments.height
-      ),
+      scale: new THREE.PlaneGeometry(1, 1, segments.width, segments.height),
     };
     const geometry = geometryMap[meshSizeType];
 
