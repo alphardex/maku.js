@@ -24,19 +24,19 @@ npm i maku.js
 1. Define some images in your HTML, and make them transparent
 
 ```html
-<div class="image-plane fixed z-0 w-screen h-screen pointer-events-none"></div>
-<div class="bg-black">
-  <div class="h-20"></div>
-  <div class="gallery">
-    <img
-      class="gallery-item"
-      src="https://i.loli.net/2021/10/09/UwaE61hgctofAFL.jpg"
-      crossorigin="anonymous"
-      alt=""
-    />
-    ...
-  </div>
-  <div class="h-20"></div>
+<canvas id="sketch"></canvas>
+<div class="gallery-container">
+  <ul class="gallery">
+    <li class="gallery-item">
+      <img
+        src="https://s2.loli.net/2023/12/26/U9i6aQ7c1Wfd4th.jpg"
+        class="gallery-item-img"
+        alt=""
+      />
+      <div class="gallery-item-text">Image one</div>
+    </li>
+    <!-- ... -->
+  </ul>
 </div>
 ```
 
@@ -50,97 +50,128 @@ img {
 
 ```js
 import * as THREE from "three";
-import { Maku, MakuGroup, Scroller, getScreenFov } from "maku.js";
+import Lenis from "@studio-freight/lenis";
+import { getScreenFov, Maku, MakuGroup } from "maku.js";
 
-// Select a container
-const container = document.querySelector(".image-plane");
+const width = window.innerWidth,
+  height = window.innerHeight;
+
+const z = 600;
+const fov = getScreenFov(z, height);
+const camera = new THREE.PerspectiveCamera(fov, width / height, 100, 2000);
+camera.position.z = z;
 
 // Create scene
 const scene = new THREE.Scene();
 
-// Create camera
-// The fov of camera can be calculated by the function below to sync the unit
-const cameraPosition = new THREE.Vector3(0, 0, 600);
-const fov = getScreenFov(cameraPosition.z);
-const aspect = container.clientWidth / container.clientHeight;
-const camera = new THREE.PerspectiveCamera(fov, aspect, 100, 2000);
-camera.position.copy(cameraPosition);
-
-// Create Renderer
+// Create renderer
+const canvas = document.querySelector("#sketch");
 const renderer = new THREE.WebGLRenderer({
-  alpha: true,
+  canvas,
   antialias: true,
+  alpha: true,
 });
-renderer.setSize(container.clientWidth, container.clientHeight);
-renderer.setClearColor(0x000000, 0);
-container.appendChild(renderer.domElement);
+renderer.setSize(width, height);
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+renderer.setAnimationLoop(animation);
 
-// Select all the images you want to render in WebGL
-const images = [...document.querySelectorAll("img")];
+// Create clock
+const clock = new THREE.Clock();
 
-// Your own vertex shader
-const imagePlaneMainVertexShader = `
+// Create main objects
+const textureLoader = new THREE.TextureLoader();
+
+const material = new THREE.ShaderMaterial({
+  vertexShader: /* glsl */ `
+uniform float iTime;
+uniform vec2 iResolution;
+
 varying vec2 vUv;
 
 void main(){
-    vec4 modelPosition=modelMatrix*vec4(position,1.);
-    vec4 viewPosition=viewMatrix*modelPosition;
-    vec4 projectedPosition=projectionMatrix*viewPosition;
-    gl_Position=projectedPosition;
-
+    vec3 p=position;
+    gl_Position=projectionMatrix*modelViewMatrix*vec4(p,1.);
+    
     vUv=uv;
 }
-`;
-
-// Your own fragment shader
-const imagePlaneMainFragmentShader = `
-uniform sampler2D uTexture;
-
+  `,
+  fragmentShader: /* glsl */ `
 varying vec2 vUv;
 
-void main(){
-    vec4 texture=texture2D(uTexture,vUv);
-    vec3 color=texture.rgb;
-    gl_FragColor=vec4(color,1.);
-}
-`;
+uniform sampler2D iChannel0;
 
-// Create a ShaderMaterial
-const imagePlaneMaterial = new THREE.ShaderMaterial({
-  vertexShader: imagePlaneMainVertexShader,
-  fragmentShader: imagePlaneMainFragmentShader,
-  side: THREE.DoubleSide,
+void main(){
+    vec2 uv=vUv;
+    vec4 tex=texture(iChannel0,uv);
+    vec3 col=tex.xyz;
+    gl_FragColor=vec4(col,1.);
+}
+  `,
   uniforms: {
-    uTexture: {
+    iChannel0: {
       value: null,
+    },
+    iTime: {
+      value: clock.getElapsedTime(),
+    },
+    iResolution: {
+      value: new THREE.Vector2(window.innerWidth, window.innerHeight),
     },
   },
 });
-
-// Make a MakuGroup that contains all the makus!
+const elList = [...document.querySelectorAll(".gallery-item-img")];
 const makuGroup = new MakuGroup();
-const makus = images.map((image) => new Maku(image, imagePlaneMaterial, scene));
+const makus = elList.map(
+  (image) =>
+    new Maku(image, material, scene, {
+      meshSizeType: "scale",
+      textureUniform: "iChannel0",
+      textureLoader,
+    })
+);
 makuGroup.addMultiple(makus);
 
-// Sync images positions
-makuGroup.setPositions();
+makuGroup.syncPositions();
 
-// Make a scroller
-const scroller = new Scroller();
-scroller.listenForScroll();
-
-// Sync scroll
-const update = () => {
-  scroller.syncScroll();
-  const currentScrollY = scroller.scroll.current;
-  makuGroup.setPositions(currentScrollY);
-};
-
-// Render the scene
-renderer.setAnimationLoop(() => {
-  update();
-  renderer.render(scene, camera);
+// Create scroller
+const lenis = new Lenis({
+  smoothTouch: true,
+  syncTouch: true,
 });
+
+// Handle animation
+function animation(time) {
+  lenis.raf(time);
+
+  makuGroup.makus.forEach((maku) => {
+    const { mesh } = maku;
+    mesh.material.uniforms.iTime.value = clock.getElapsedTime();
+    mesh.material.uniforms.iResolution.value = new THREE.Vector2(
+      window.innerWidth,
+      window.innerHeight
+    );
+  });
+  makuGroup.syncPositions();
+
+  renderer.render(scene, camera);
+}
+
+// Handle resize
+function resize() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+
+  if (camera instanceof THREE.PerspectiveCamera) {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.fov = getScreenFov(camera.position.z, window.innerHeight);
+    camera.updateProjectionMatrix();
+  }
+
+  makuGroup.syncPositions();
+  makuGroup.syncScales();
+}
+
+window.addEventListener("resize", resize);
 
 // And the basic setup is done!
 // For more, you should visit demos below.
