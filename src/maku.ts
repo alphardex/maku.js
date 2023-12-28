@@ -1,6 +1,18 @@
 import * as THREE from "three";
 import { HTMLIVCElement, MakuConfig, Scroll, Segments } from "../types/types";
 
+const textureLoaderInstance = new THREE.TextureLoader();
+
+// 计算元素位置
+const calcMeshPos = (el: Element) => {
+  const rect = el.getBoundingClientRect();
+  const x1 = rect.left + rect.width / 2;
+  const y1 = rect.top + rect.height / 2;
+  const x2 = x1 - window.innerWidth / 2;
+  const y2 = -y1 + window.innerHeight / 2;
+  return { x: x2, y: y2 };
+};
+
 // 用于同步HTML元素与WebGL的平面元素
 class Maku {
   el: HTMLIVCElement; // 元素
@@ -23,6 +35,7 @@ class Maku {
       },
       textureUniform = "uTexture",
       useTextureLoader = true,
+      textureLoader = textureLoaderInstance,
     } = config;
 
     this.el = el;
@@ -30,23 +43,29 @@ class Maku {
     this.segments = segments;
 
     // 创建贴图，将其设为材质的uniform
-    // 这里为什么优先用TextureLoader？
-    // 因为three.js自v135起用了texStorage2D
-    // texStorage2D只接受固定尺寸的图片，用CSS缩放大小的图片则不受支持
-    // Github的issue地址：https://github.com/mrdoob/three.js/issues/23164
-    // 用TextureLoader只是一时之举，希望官方能早日想出更好的修复方案
-    const texture =
-      useTextureLoader && !(el instanceof HTMLCanvasElement)
-        ? new THREE.TextureLoader().load(el.src)
-        : new THREE.Texture(el);
+    let texture = null;
+    if (el instanceof HTMLVideoElement) {
+      // 视频
+      texture = new THREE.VideoTexture(el);
+    } else {
+      // 这里为什么优先用TextureLoader？
+      // 因为three.js自v135起用了texStorage2D
+      // texStorage2D只接受固定尺寸的图片，用CSS缩放大小的图片则不受支持
+      // Github的issue地址：https://github.com/mrdoob/three.js/issues/23164
+      // 用TextureLoader只是一时之举，希望官方能早日想出更好的修复方案
+      texture =
+        useTextureLoader && !(el instanceof HTMLCanvasElement)
+          ? textureLoader.load(el.src)
+          : new THREE.Texture(el);
+    }
     texture.needsUpdate = true;
     const materialCopy = material.clone();
     materialCopy.uniforms[textureUniform].value = texture;
 
     // 获取图片的DOM矩阵，包含了长宽等信息
-    const rect = el.getBoundingClientRect();
-    const { width, height } = rect;
+    const rect = this.refreshRect();
     this.rect = rect;
+    const { width, height } = rect;
 
     // 几何体分为2种：
     // 1. 长宽跟DOM矩阵一致（默认）
@@ -76,13 +95,28 @@ class Maku {
     scene.add(mesh);
     this.mesh = mesh;
   }
-  // 同步位置
+  // 刷新矩阵
+  refreshRect() {
+    const { el } = this;
+    const rect = el.getBoundingClientRect();
+    this.rect = rect;
+    return rect;
+  }
+  // 设置位置
   setPosition(deltaY = window.scrollY) {
-    const { mesh, rect } = this;
-    const { top, left, width, height } = rect;
-    const x = left + width / 2 - window.innerWidth / 2;
-    const y = -(top + height / 2 - window.innerHeight / 2) + deltaY;
-    mesh.position.set(x, y, 0);
+    const { el, mesh } = this;
+    const { x, y } = calcMeshPos(el);
+    mesh.position.set(x, y + deltaY, 0);
+  }
+  // 同步位置
+  syncPosition() {
+    this.setPosition(0);
+  }
+  // 同步大小
+  syncScale() {
+    const { mesh } = this;
+    const rect = this.refreshRect();
+    mesh.scale.set(rect.width, rect.height, 1);
   }
   // 消除
   destroy() {
@@ -107,11 +141,25 @@ class MakuGroup {
       this.add(maku);
     });
   }
-  // 批量同步元素位置
+  // 批量设定元素位置
   setPositions(deltaY = window.scrollY) {
     const { makus } = this;
     makus.forEach((obj) => {
       obj.setPosition(deltaY);
+    });
+  }
+  // 批量同步元素位置
+  syncPositions() {
+    const { makus } = this;
+    makus.forEach((obj) => {
+      obj.syncPosition();
+    });
+  }
+  // 批量同步大小
+  syncScales() {
+    const { makus } = this;
+    makus.forEach((obj) => {
+      obj.syncScale();
     });
   }
   // 清空所有元素
@@ -156,8 +204,8 @@ class Scroller {
 }
 
 // 获取跟屏幕同像素的fov角度
-const getScreenFov = (z: number) => {
-  return THREE.MathUtils.radToDeg(2 * Math.atan(window.innerHeight / 2 / z));
+const getScreenFov = (z: number, height = window.innerHeight) => {
+  return THREE.MathUtils.radToDeg(2 * Math.atan(height / 2 / z));
 };
 
 export { Maku, MakuGroup, Scroller, getScreenFov };

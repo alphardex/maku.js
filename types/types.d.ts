@@ -27,4 +27,5 @@ export interface MakuConfig {
   segments?: Segments;
   textureUniform?: string;
   useTextureLoader?: boolean;
+  textureLoader?: THREE.TextureLoader;
 }
