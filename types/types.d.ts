@@ -28,4 +28,5 @@ export interface MakuConfig {
   textureUniform?: string;
   useTextureLoader?: boolean;
   textureLoader?: THREE.TextureLoader;
+  isRectAutoRefreshed?: boolean;
 }

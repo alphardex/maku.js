@@ -4,8 +4,7 @@ import { HTMLIVCElement, MakuConfig, Scroll, Segments } from "../types/types";
 const textureLoaderInstance = new THREE.TextureLoader();
 
 // 计算元素位置
-const calcMeshPos = (el: Element) => {
-  const rect = el.getBoundingClientRect();
+const calcMeshPos = (rect: DOMRect) => {
   const x1 = rect.left + rect.width / 2;
   const y1 = rect.top + rect.height / 2;
   const x2 = x1 - window.innerWidth / 2;
@@ -20,6 +19,7 @@ class Maku {
   mesh: THREE.Mesh | THREE.Points; // 网格
   scene: THREE.Scene; // 所属场景
   segments: Segments; // 细分数
+  isRectAutoRefreshed: boolean; // 是否自动刷新DOM矩阵
   constructor(
     el: HTMLIVCElement,
     material: THREE.ShaderMaterial,
@@ -36,11 +36,13 @@ class Maku {
       textureUniform = "uTexture",
       useTextureLoader = true,
       textureLoader = textureLoaderInstance,
+      isRectAutoRefreshed = true,
     } = config;
 
     this.el = el;
     this.scene = scene;
     this.segments = segments;
+    this.isRectAutoRefreshed = isRectAutoRefreshed;
 
     // 创建贴图，将其设为材质的uniform
     let texture = null;
@@ -104,8 +106,11 @@ class Maku {
   }
   // 设置位置
   setPosition(deltaY = window.scrollY) {
-    const { el, mesh } = this;
-    const { x, y } = calcMeshPos(el);
+    const { mesh } = this;
+    if (this.isRectAutoRefreshed) {
+      this.refreshRect();
+    }
+    const { x, y } = calcMeshPos(this.rect);
     mesh.position.set(x, y + deltaY, 0);
   }
   // 同步位置
